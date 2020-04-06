@@ -66,7 +66,7 @@ class cauchy_loss(nn.Module):
 
 	def cauchy_quantization(self, u):
 		dist = (self.output_dim/2.0) * (1.0 - self.ham_cos(torch.abs(u),torch.ones(u.shape))) + 1e-6
-		dit = 1 + dist/self.gamma
+		dist = 1 + dist/self.gamma
 		dist = torch.sum(torch.log(dist))
 		return dist
 
