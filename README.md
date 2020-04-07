@@ -1,4 +1,4 @@
-# Main notes:#
+# Main notes: #
 
 - Train Code and Architecture changed from previous codes of compression_d5_32
 - Used GAP to join 32 feature tensors of shape=input_img.shape to a linear layer(in=32, out=len_hash_vector)
