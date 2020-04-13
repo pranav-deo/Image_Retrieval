@@ -50,10 +50,10 @@ val_transform = transforms.Compose([
 ])
 
 trainset = torchvision.datasets.ImageFolder(train_data_folder,transform=train_transform)
-train_loader = torch.utils.cpu().item().DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
+train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
 
 valset = torchvision.datasets.ImageFolder(val_data_folder,transform=val_transform)
-val_loader = torch.utils.cpu().item().DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4)
+val_loader = torch.utils.data.DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 class comp_loss(nn.Module):
 	def __init__(self):
