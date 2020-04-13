@@ -20,12 +20,12 @@ class cauchy_loss(nn.Module):
 
 
 	def cauchy_cross_entropy(self, u, label_u, v=None, label_v=None, gamma=1, normed=True):
-	"""
-	Input tensor:
-				u: 			batch size x embedding_dim
-				label_u:	batch_size x 1
+		"""
+		Input tensor:
+					u: 			batch size x embedding_dim
+					label_u:	batch_size x 1
 
-	"""
+		"""
 
 		if v is None:
 			v, label_v = u ,label_u
@@ -43,26 +43,25 @@ class cauchy_loss(nn.Module):
 
 		if normed: #hamming distance
 		
-		"""
-			Literal translation:
+			"""
+				Literal translation:
 
-			ip_1 = u @ v.t()
-			mod_1 =  torch.sqrt(torch.dot(torch.sum(u**2),torch.sum(v**2)+0.000001))
-			dist = (self.output_dim/2.0) * (1.0- ip_1/mod_1) + 0.000001
-		"""
-
+				ip_1 = u @ v.t()
+				mod_1 =  torch.sqrt(torch.dot(torch.sum(u**2),torch.sum(v**2)+0.000001))
+				dist = (self.output_dim/2.0) * (1.0- ip_1/mod_1) + 0.000001
+			"""
 			# Compact code:
 			dist = (self.output_dim/2.0) * (1.0 - self.ham_cos(u,v)) + 1e-6
 
 		else: #Euclidean distance
-		
-		"""
-			Literal translation:
+			
+			"""
+				Literal translation:
 
-			r_u = torch.sum(u**2, 1)
-			r_v = torch.sum(v**2, 1)
-			dist = r_u - 2 * (u @ v.t()) + r_v.unsqueeze(1) + 0.001
-		"""
+				r_u = torch.sum(u**2, 1)
+				r_v = torch.sum(v**2, 1)
+				dist = r_u - 2 * (u @ v.t()) + r_v.unsqueeze(1) + 0.001
+			"""
 
 			# Compact code
 			dist = torch.dist(u,v) + 1e-3
