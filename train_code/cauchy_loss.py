@@ -18,7 +18,6 @@ class cauchy_loss(nn.Module):
 		self.img_label = None
 		self.ham_cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
-
 	def cauchy_cross_entropy(self, u, label_u, v=None, label_v=None, gamma=1, normed=True):
 		"""
 		Input tensor:
@@ -26,9 +25,16 @@ class cauchy_loss(nn.Module):
 					label_u:	batch_size x 1
 
 		"""
-
+		# print("u",u.size())
+		# print("label_u",label_u.size())
+		# print("u shape",u.size())
+		u = u.float()
+		label_u = label_u.float()
 		if v is None:
 			v, label_v = u ,label_u
+		else:
+			v = v.float()
+			label_v = label_v.float()
 
 		""" label_ip: batch_size x batch_size"""
 
@@ -37,19 +43,23 @@ class cauchy_loss(nn.Module):
 		else:
 			label_ip = label_u @ label_v.t()
 
-		""" s: batch_size x batch_size, [0,1]"""
+		""" s: batch_size x batch_size, lies in [0,1]"""
 
 		s = torch.clamp(label_ip, 0.0, 1.0)
+		# print("="*30)
+		# print("size of s is: {}".format(s.size()))
+		# print("="*30)
 
 		if normed: #hamming distance
 		
 			"""
 				Literal translation:
-
-				ip_1 = u @ v.t()
-				mod_1 =  torch.sqrt(torch.dot(torch.sum(u**2),torch.sum(v**2)+0.000001))
-				dist = (self.output_dim/2.0) * (1.0- ip_1/mod_1) + 0.000001
+			
+			ip_1 = u @ v.t()
+			mod_1 =  torch.sqrt(torch.sum(u**2,1).unsqueeze(1) @ (torch.sum(v**2,1)+0.000001).unsqueeze(0))
+			dist = (self.output_dim/2.0) * (1.0- ip_1/mod_1) + 0.000001
 			"""
+			
 			# Compact code:
 			w1 = u.norm(p=2, dim=1, keepdim=True)
 			w2 = w1 if u is v else v.norm(p=2, dim=1, keepdim=True)
@@ -69,6 +79,7 @@ class cauchy_loss(nn.Module):
 			dist = torch.dist(u,v) + 1e-3
 
 		cauchy = gamma / (dist + gamma)
+		# print("size of cauchy is: {}".format(cauchy.size()))
 
 		""" s_t: batch_size x batch_size, [-1,1]"""
 		s_t = 2*(s-0.5)
@@ -77,6 +88,7 @@ class cauchy_loss(nn.Module):
 		balance_param = torch.abs(s-1) + s*sum_all/sum_1 # Balancing similar and non-similar classes (wij in paper)
 
 		mask = torch.eye(u.shape[0]) == 0 
+		# print("mask",mask)
 		cauchy_mask = cauchy[mask]
 		s_mask = s[mask]
 		balance_p_mask = balance_param[mask]
@@ -86,7 +98,9 @@ class cauchy_loss(nn.Module):
 		return torch.sum(all_loss * balance_p_mask)
 
 	def cauchy_quantization(self, u):
-		dist = (self.output_dim/2.0) * (1.0 - self.ham_cos(torch.abs(u),torch.ones(u.shape))) + 1e-6
+		# print("u shape",u.size())
+		v = torch.ones(u.shape).cuda()
+		dist = (self.output_dim/2.0) * (1.0 - self.ham_cos(torch.abs(u),v)) + 1e-6
 		dist = 1 + dist/self.gamma
 		dist = torch.sum(torch.log(dist))
 		return dist
@@ -97,14 +111,18 @@ class cauchy_loss(nn.Module):
 		self.img_label = img_label
 
 		# Cauchy CE loss
-		self.cos_loss = self.cauchy_cross_entropy(self.img_last_layer, self.img_label, gamma=self.gamma, normed=False)
+		self.cos_loss = self.cauchy_cross_entropy(self.img_last_layer, self.img_label, gamma=self.gamma, normed=True)
 		
 		# quantization loss -> variation from {-1,1} 
-		self.q_loss_img = (torch.norm(torch.abs(self.img_last_layer)-1.0))**2
-		# self.q_loss_img = self.cauchy_quantization(self.img_last_layer) # Why not this (according to paper)??
+		# self.q_loss_img = (torch.norm(torch.abs(self.img_last_layer)-1.0))**2
+		self.q_loss_img = self.cauchy_quantization(self.img_last_layer) # Why not this (according to paper)??
 
 		# scaling 
 		self.q_loss = self.q_lambda * self.q_loss_img
 		# total loss
 		self.loss = self.cos_loss + self.q_loss
+		# print("loss from cauchy is: {}".format(self.loss))
+		if torch.isnan(self.loss).any():
+			print("NAN loss")
+			assert 1==0
 		return self.loss
