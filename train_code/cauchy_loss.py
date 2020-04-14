@@ -51,7 +51,9 @@ class cauchy_loss(nn.Module):
 				dist = (self.output_dim/2.0) * (1.0- ip_1/mod_1) + 0.000001
 			"""
 			# Compact code:
-			dist = (self.output_dim/2.0) * (1.0 - self.ham_cos(u,v)) + 1e-6
+			w1 = u.norm(p=2, dim=1, keepdim=True)
+			w2 = w1 if u is v else v.norm(p=2, dim=1, keepdim=True)
+			dist = (self.output_dim/2.0)*(1.0-torch.mm(u, v.t()) / (w1 * w2.t()).clamp(min=1e-8))+1e-6
 
 		else: #Euclidean distance
 			
