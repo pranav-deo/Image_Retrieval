@@ -4,8 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 
 Num_channels = 32
-epsilon = torch.empty(1).cuda()
-nn.init.constant_(epsilon, 1e-10)
+epsilon = 1e-10
+# nn.init.constant_(epsilon, 1e-10)
 inner_channels = 128
 d = 5
 
@@ -70,6 +70,7 @@ class AE(nn.Module):
 
 		self.hashed_layer = nn.Sequential(
 							nn.Linear(Num_channels, K),
+							nn.BatchNorm1d(num_features=K),
 							nn.Tanh()
 						) 
 
@@ -89,13 +90,16 @@ class AE(nn.Module):
 		esum6 = eblock16 + ec2+esum2
 		ec3 = self.e_conv_3(esum6)
 		encode_out = torch.sigmoid(ec3)
-		q = self.softQuantizer(z = encode_out, d = d, pow_ = 16)
-		two_bit_in = self.imp_net(encode_out)
-		two_bit_in = two_bit_in + encode_out
-		two_bit_in = torch.sigmoid(two_bit_in)
-		imp = self.softQuantizer(z = two_bit_in, d = 2, pow_ = 16)
-		z_hat = self.masking(q, imp, d)
-		return self.decode(z_hat, imp), self.hashed_layer(self.give_GAP(z_hat))
+		# print(encode_out.size())
+		# assert 1==0
+		# q = self.softQuantizer(z = encode_out, d = d, pow_ = 16)
+		# two_bit_in = self.imp_net(encode_out)
+		# two_bit_in = two_bit_in + encode_out
+		# two_bit_in = torch.sigmoid(two_bit_in)
+		# imp = self.softQuantizer(z = two_bit_in, d = 2, pow_ = 16)
+		# z_hat = self.masking(q, imp, d)
+		z_hat = encode_out
+		return self.decode(z_hat, z_hat), self.hashed_layer(self.give_GAP(z_hat))
 
 	def decode(self, decode_in, imp):
 		dc1 = self.d_up_conv_1(decode_in)
