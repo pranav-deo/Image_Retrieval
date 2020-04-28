@@ -1,3 +1,4 @@
 results/
 runs/compression_ae/try1_full
 weights/
+*.pyc
