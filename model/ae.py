@@ -15,7 +15,7 @@ class AE(nn.Module):
         self.e_conv = nn.ModuleList([])
         self.e_conv.append(self.give_conv(3, 64))
         self.e_conv.append(self.give_conv(64, inner_channels))
-        self.e_conv.append(self.give_conv(inner_channels, Num_channels), last=True)
+        self.e_conv.append(self.give_conv(inner_channels, Num_channels, last=True))
 
         self.e_block = nn.ModuleList([self.res_block(inner_channels, inner_channels) for _ in range(7)])
 
