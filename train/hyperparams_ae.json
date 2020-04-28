@@ -4,12 +4,12 @@
 	"train_stages": [
 		{
 			"lr" 		: 1e-3,
-			"num_epoch"	: 50,
+			"num_epoch"	: 30,
 			"use_weight": 0
 		}
 	],
 
-	"batch_size" : 64,
+	"batch_size" : 112,
 	"cauchy_loss_weight" :1,
 
 	"scheduler_step"	: 5,
