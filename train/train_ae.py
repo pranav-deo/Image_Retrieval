@@ -142,7 +142,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                 train_msssim += msssim.cpu().item()
                 train_loss += loss.cpu().item()
 
-                for key, val in {'train_iter_loss': loss, 'train_iter_msssim': msssim, 'train_iter_hash': loss_hash, 'train_iter_mse': mse}:
+                for key, val in {'train_iter_loss': loss, 'train_iter_msssim': msssim, 'train_iter_hash': loss_hash, 'train_iter_mse': mse}.items():
                     writer.add_scalar(key, val.cpu().item(), train_iter_count)
 
                 train_iter_count += 1
@@ -184,13 +184,13 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                                 val_mse += mse.cpu().item()
                                 val_hash += loss_hash.cpu().item()
 
-                                for key, val in {'validation_iter_loss': loss, 'validation_iter_msssim': msssim, 'validation_iter_hash': loss_hash, 'validation_iter_mse': mse}:
+                                for key, val in {'validation_iter_loss': loss, 'validation_iter_msssim': msssim, 'validation_iter_hash': loss_hash, 'validation_iter_mse': mse}.items():
                                     writer.add_scalar(key, val.cpu().item(), val_iter_count)
 
                                 val_iter_count += 1
                                 vbar.update(1)
 
-                        for key, val in {'validation_100_loss': val_loss, 'validation_100_msssim': val_msssim, 'validation_100_hash': val_hash, 'validation_100_mse': mse}:
+                        for key, val in {'validation_100_loss': val_loss, 'validation_100_msssim': val_msssim, 'validation_100_hash': val_hash, 'validation_100_mse': mse}.items():
                             writer.add_scalar(key, val * batch_size / len(valset), val_iter100_count)
 
                         val_iter100_count += 1
@@ -203,5 +203,5 @@ for trn_stage_no, train_stage in enumerate(train_stages):
         sched.step()
         print("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {}".format(train_mse, train_msssim, train_hash, train_loss))
         send_slack_notif("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {} at the end of epoch {}".format(train_mse, train_msssim, train_hash, train_loss, epoch))
-        for key, val in {'train_epoch_mse': train_mse, 'train_epoch_msssim': train_msssim, 'train_epoch_hash': train_hash, 'train_epoch_loss': train_loss}:
+        for key, val in {'train_epoch_mse': train_mse, 'train_epoch_msssim': train_msssim, 'train_epoch_hash': train_hash, 'train_epoch_loss': train_loss}.items():
             writer.add_scalar(key, val * batch_size / len(trainset), epoch)
