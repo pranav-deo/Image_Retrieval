@@ -1,9 +1,11 @@
 {
+	"K"			: 16,
 	"q_lambda" 	: 2,
 
 	"train_stages": [
 		{
-			"lr" 		: 1e-3,
+			"lr" 		: 1e-4,
+			"lr_cauchy"	: 1e-3,
 			"num_epoch"	: 30,
 			"use_weight": 0
 		}
@@ -17,5 +19,5 @@
 
 	"saved_model_name" 	: "../weights/ae/only_recon_best_weights",
 	"train_data_folder" : "/home/Drive3/pranav/NCT-CRC-HE-100K",
-	"val_data_folder" : "/home/Drive3/pranav/CRC-VAL-HE-7K"
+	"val_data_folder" 	: "/home/Drive3/pranav/CRC-VAL-HE-7K"
 }

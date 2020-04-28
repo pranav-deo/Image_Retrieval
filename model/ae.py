@@ -8,7 +8,7 @@ inner_channels = 128
 class AE(nn.Module):
     """AE for mulitask hashing, reconstruction"""
 
-    def __init__(self):
+    def __init__(self, K):
         super(AE, self).__init__()
 
         # Encoder:
@@ -26,6 +26,18 @@ class AE(nn.Module):
         self.d_conv.append(self.give_conv(64, 3, T=True, last=True))
 
         self.d_block = nn.ModuleList([self.res_block(inner_channels, inner_channels) for _ in range(7)])
+
+        # Hasher
+        self.hashed_layer = nn.Sequential(
+            nn.BatchNorm1d(784),
+            nn.Dropout(p=0.3),
+            nn.Linear(784, 100),
+            nn.ReLU(),
+            nn.BatchNorm1d(100),
+            nn.Dropout(p=0.3),
+            nn.Linear(100, K),
+            nn.Tanh()
+        )
 
     def encoder(self, x):
         conv = self.e_conv
@@ -65,10 +77,16 @@ class AE(nn.Module):
         c2 = conv[2](c1)
         return c2
 
+    def hasher(self, x):
+        to_hash = torch.median(x, dim=1, keepdim=True)
+        out = self.hashed_layer(to_hash.view(-1, 784))
+        return out
+
     def forward(self, x):
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
-        return encoded, decoded
+        hashed = self.hasher(encoded)
+        return encoded, decoded, hashed
 
     def give_conv(self, in_c, out_c, T=False, last=False):
         if T:

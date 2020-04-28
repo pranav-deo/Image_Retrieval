@@ -1,0 +1,6 @@
+{
+	"batch_size" : 2,
+
+	"saved_model_name" 	: "../weights/only_recon_best_weights_stage1.pt",
+	"val_data_folder" : "/home/pranav/ML/medal/local_things/test"
+}

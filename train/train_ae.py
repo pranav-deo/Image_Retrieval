@@ -17,14 +17,14 @@ sys.path.append(cwd + '/../utils')
 
 # Importing from custom files
 from ae import AE
-# from losses import cauchy_loss, comp_loss
-from losses import comp_loss
+from losses import cauchy_loss, comp_loss
 from utils import make_one_hot
 
 # Reading Hyperparameters
 with open("./hyperparams_ae.json", "r") as read_file:
     hyperparams = json.load(read_file)
 
+K = hyperparams["K"]
 q_lambda = hyperparams["q_lambda"]
 train_stages = hyperparams["train_stages"]
 batch_size = hyperparams["batch_size"]
@@ -58,7 +58,7 @@ val_transform = transforms.Compose([
 for trn_stage_no, train_stage in enumerate(train_stages):
     print("Started with train stage-{}".format(trn_stage_no + 1))
 
-    tensorboard_folder = '../runs/ae/ae_recon_stage{}'.format(trn_stage_no + 1)
+    tensorboard_folder = '../runs/ae/ae_stage{}'.format(trn_stage_no + 1)
     writer = SummaryWriter(tensorboard_folder)
 
     trainset = torchvision.datasets.ImageFolder(train_data_folder, transform=train_transform)
@@ -73,25 +73,23 @@ for trn_stage_no, train_stage in enumerate(train_stages):
     if not trn_stage_no == 0 and train_stage["use_weight"]:
         model.load_state_dict(torch.load(saved_model_name + '_stage{}.pt'.format(trn_stage_no)))
 
-    # # Adding layer parameters for different (10x faster than pretrained) learning rate
-    # fast_learning_layers = ['hashed_layer.{}'.format(ii) for ii in [0, 1, 3, 4]]
-    # fast_learning_layers += ['d_conv_{}.{}'.format(ii, jj) for ii in [1, 2, 3, 4, 5, 6, 16] for jj in [1, 2, 5, 6]]
-    # fast_learning_layers += ['d_up_{}.{}'.format(ii, jj) for ii in [1, 2, 3, 4, 5] for jj in [0, 1]]
-    # fast_learning_layers = ['module.' + s + sb for s in fast_learning_layers for sb in ['.weight', '.bias']]
+    # Adding layer parameters for different (10x faster than pretrained) learning rate
+    fast_learning_layers = ['hashed_layer.{}'.format(ii) for ii in [0, 2, 4, 6]]
+    fast_learning_layers = ['module.' + s + sb for s in fast_learning_layers for sb in ['.weight', '.bias']]
 
-    # params = list(map(lambda x: x[1], list(filter(lambda kv: kv[0] in fast_learning_layers, model.named_parameters()))))
-    # base_params = list(map(lambda x: x[1], list(filter(lambda kv: kv[0] not in fast_learning_layers, model.named_parameters()))))
-    # assert len(params) == len(fast_learning_layers)
+    params = list(map(lambda x: x[1], list(filter(lambda kv: kv[0] in fast_learning_layers, model.named_parameters()))))
+    base_params = list(map(lambda x: x[1], list(filter(lambda kv: kv[0] not in fast_learning_layers, model.named_parameters()))))
+    assert len(params) == len(fast_learning_layers)
 
     # Initializing losses and adding loss params to optimizer with higher lr
     criterion1 = comp_loss()
-    # criterion2 = cauchy_loss(K=K, q_lambda=q_lambda)
-    # params.extend(list(criterion1.parameters()))
-    # params.extend(list(criterion2.parameters()))
+    criterion2 = cauchy_loss(K=K, q_lambda=q_lambda)
+    params.extend(list(criterion1.parameters()))
+    params.extend(list(criterion2.parameters()))
 
     # Initializing optimizer and scheduler
-    # optimizer = torch.optim.Adam([{'params': base_params}, {'params': params, 'lr': train_stage["lr_cauchy"]}], lr=train_stage["lr"], weight_decay=1e-4)
-    optimizer = torch.optim.Adam(model.parameters(), lr=train_stage["lr"], weight_decay=1e-4)
+    optimizer = torch.optim.Adam([{'params': base_params}, {'params': params, 'lr': train_stage["lr_cauchy"]}], lr=train_stage["lr"], weight_decay=1e-4)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=train_stage["lr"], weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.StepLR(optimizer, step_size=hyperparams["scheduler_step"], gamma=hyperparams["scheduler_gamma"], last_epoch=-1)
 
     train_iter_count = 0
@@ -108,7 +106,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
 
         train_mse = 0.0
         train_msssim = 0.0
-        # train_hash = 0.0
+        train_hash = 0.0
         train_loss = 0.0
 
         with tqdm(total=len(train_loader), desc="Batches") as pbar:
@@ -120,33 +118,31 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                 label = make_one_hot(label)
                 img = img.to(device)
 
-                # output, hashed_layer = model(img)
-                _, output = model(img)
+                _, output, hashed_layer = model(img)
+
                 if (i % 100 == 0 and epoch == 0) or (i % 500 == 0 and epoch > 0):
 
                     # PATH ASSUMES ONLY 1 STAGE
-                    save_image(torch.cat((img, output)), "../results/ae/images/train_check/{}_{}.jpg".format(epoch, i), nrow=batch_size)
+                    save_image(torch.cat((img, output)), "../results/ae_hash/images/train_check/{}_{}.jpg".format(epoch, i), nrow=batch_size)
 
                 loss, mse, msssim = criterion1(output, img)
-                # loss_hash = criterion2(hashed_layer, label)
+                loss_hash = criterion2(hashed_layer, label)
 
-                # if torch.isnan(loss_hash).any():
-                #     torch.save(model.state_dict(), "nan_aya_wo_model_weights.pt")
-                #     torch.save(img, "nan_dene_wala_img_batch.pt")
-                #     assert not torch.isnan(loss_hash).any()
+                if torch.isnan(loss_hash).any():
+                    torch.save(model.state_dict(), "nan_aya_wo_model_weights.pt")
+                    torch.save(img, "nan_dene_wala_img_batch.pt")
+                    assert not torch.isnan(loss_hash).any()
 
-                # train_hash += loss_hash.cpu().item()
+                train_hash += loss_hash.cpu().item()
                 train_mse += mse.cpu().item()
                 train_msssim += msssim.cpu().item()
                 train_loss += loss.cpu().item()
 
-                writer.add_scalar('train_iter_loss', loss.cpu().item(), train_iter_count)
-                writer.add_scalar('train_iter_msssim', msssim.cpu().item(), train_iter_count)
-                # writer.add_scalar('train_iter_hash', loss_hash.cpu().item(), train_iter_count)
-                writer.add_scalar('train_iter_mse', mse.cpu().item(), train_iter_count)
+                for key, val in {'train_iter_loss': loss, 'train_iter_msssim': msssim, 'train_iter_hash': loss_hash, 'train_iter_mse': mse}:
+                    writer.add_scalar(key, val.cpu().item(), train_iter_count)
 
                 train_iter_count += 1
-                # total_loss = loss + loss_hash * cauchy_loss_weight
+                total_loss = loss + loss_hash * cauchy_loss_weight
                 total_loss = loss
 
                 optimizer.zero_grad()
@@ -158,7 +154,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                     val_loss = 0.0
                     val_msssim = 0.0
                     val_mse = 0.0
-                    # val_hash = 0.0
+                    val_hash = 0.0
                     with torch.no_grad():
                         model.eval()
                         with tqdm(total=len(val_loader), desc="Val Batches at {}th batch".format(i)) as vbar:
@@ -167,36 +163,31 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                                 label = label.to(device)
                                 label = make_one_hot(label)
                                 img = img.to(device)
-                                # output, hashed_layer = model(img)
-                                _, output = model(img)
+                                _, output, hashed_layer = model(img)
 
                                 if j % 50 == 0:
 
                                     # FILENAME ASSUMES ONLY ONE STAGE
-                                    file_name = '../results/ae/images/val_check/{}_{}.jpg'.format(epoch, j)
+                                    file_name = '../results/ae_hash/images/val_check/{}_{}.jpg'.format(epoch, j)
                                     save_image(torch.cat((img, output)), file_name, nrow=batch_size)
 
                                 loss, mse, msssim = criterion1(output, img)
-                                # loss_hash = criterion2(hashed_layer, label)
+                                loss_hash = criterion2(hashed_layer, label)
 
-                                # val_loss += loss_hash.cpu().item() * cauchy_loss_weight
+                                val_loss += loss_hash.cpu().item() * cauchy_loss_weight
                                 val_loss += loss.cpu().item()
                                 val_msssim += msssim.cpu().item()
                                 val_mse += mse.cpu().item()
-                                # val_hash += loss_hash.cpu().item()
+                                val_hash += loss_hash.cpu().item()
 
-                                writer.add_scalar('validation_iter_loss', loss.cpu().item(), val_iter_count)
-                                writer.add_scalar('validation_iter_msssim', msssim.cpu().item(), val_iter_count)
-                                writer.add_scalar('validation_iter_mse', mse.cpu().item(), val_iter_count)
-                                # writer.add_scalar('validation_iter_hash', loss_hash.cpu().item(), val_iter_count)
+                                for key, val in {'validation_iter_loss': loss, 'validation_iter_msssim': msssim, 'validation_iter_hash': loss_hash, 'validation_iter_mse': mse}:
+                                    writer.add_scalar(key, val.cpu().item(), val_iter_count)
 
                                 val_iter_count += 1
                                 vbar.update(1)
 
-                        writer.add_scalar('validation_100_loss', val_loss * batch_size / len(valset), val_iter100_count)
-                        writer.add_scalar('validation_100_msssim', val_msssim * batch_size / len(valset), val_iter100_count)
-                        writer.add_scalar('validation_100_mse', val_mse * batch_size / len(valset), val_iter100_count)
-                        # writer.add_scalar('validation_100_hash', val_hash * batch_size / len(valset), val_iter100_count)
+                        for key, val in {'validation_100_loss': val_loss, 'validation_100_msssim': val_msssim, 'validation_100_hash': val_hash, 'validation_100_mse': mse}:
+                            writer.add_scalar(key, val * batch_size / len(valset), val_iter100_count)
 
                         val_iter100_count += 1
                         if val_loss / len(valset) < best_loss:
@@ -206,9 +197,6 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                 pbar.update(1)
 
         sched.step()
-        # print("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {}".format(train_mse, train_msssim, train_hash, train_loss))
-        print("Train mse: {}, MSSSIM: {}, total loss: {}".format(train_mse, train_msssim, train_loss))
-        writer.add_scalar('train_epoch_mse', train_mse * batch_size / len(trainset), epoch)
-        writer.add_scalar('train_epoch_msssim', train_msssim * batch_size / len(trainset), epoch)
-        # writer.add_scalar('train_epoch_hash', train_hash * batch_size / len(trainset), epoch)
-        writer.add_scalar('train_epoch_loss', train_loss * batch_size / len(trainset), epoch)
+        print("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {}".format(train_mse, train_msssim, train_hash, train_loss))
+        for key, val in {'train_epoch_mse': train_mse, 'train_epoch_msssim': train_msssim, 'train_epoch_hash': train_hash, 'train_epoch_loss': train_loss}:
+            writer.add_scalar(key, val * batch_size / len(trainset), epoch)
