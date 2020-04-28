@@ -74,7 +74,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
     model = nn.DataParallel(model, device_ids=[1, 0])
 
     if train_stage["use_weight"]:
-        model.load_state_dict(torch.load(saved_model_name + '_stage1.pt'))
+        model.load_state_dict(torch.load(saved_model_name + '_stage1.pt'), strict=False)
 
     # Adding layer parameters for different (10x faster than pretrained) learning rate
     fast_learning_layers = ['hashed_layer.{}'.format(ii) for ii in [0, 2, 4, 6]]
