@@ -74,7 +74,7 @@ class AE(nn.Module):
         if T:
             conv = nn.ConvTranspose2d(in_channels=in_c, out_channels=out_c, kernel_size=(5, 5), stride=(2, 2), padding=2, output_padding=1),
         else:
-            conv = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=(5, 5), stride=(2, 2), padding=2, output_padding=1),
+            conv = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=(5, 5), stride=(2, 2), padding=2),
 
         net = nn.Sequential(conv, nn.BatchNorm2d(out_c), nn.ReLU()) if last is False else nn.Sequential(conv, nn.BatchNorm2d(out_c))
         return net
