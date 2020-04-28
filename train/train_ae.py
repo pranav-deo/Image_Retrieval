@@ -14,11 +14,13 @@ import json
 cwd = os.getcwd()
 sys.path.append(cwd + '/../model')
 sys.path.append(cwd + '/../utils')
+sys.path.append(cwd + '/..')
 
 # Importing from custom files
 from ae import AE
 from losses import cauchy_loss, comp_loss
 from utils import make_one_hot
+from slack_bot import send_slack_notif
 
 # Reading Hyperparameters
 with open("./hyperparams_ae.json", "r") as read_file:
@@ -57,8 +59,9 @@ val_transform = transforms.Compose([
 # Loop for all different stages
 for trn_stage_no, train_stage in enumerate(train_stages):
     print("Started with train stage-{}".format(trn_stage_no + 1))
+    send_slack_notif("Started with train stage-{}".format(trn_stage_no + 1))
 
-    tensorboard_folder = '../runs/ae/ae_stage{}'.format(trn_stage_no + 1)
+    tensorboard_folder = '../runs/ae_hash/ae_stage{}'.format(trn_stage_no + 1)
     writer = SummaryWriter(tensorboard_folder)
 
     trainset = torchvision.datasets.ImageFolder(train_data_folder, transform=train_transform)
@@ -100,6 +103,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
     # Train loop
     for epoch in range(train_stage["num_epoch"]):
         print("Epoch {} of {}:".format(epoch + 1, train_stage["num_epoch"]))
+        send_slack_notif("Epoch {} of {} Started!".format(epoch + 1, train_stage["num_epoch"]))
 
         for i, param_group in enumerate(optimizer.param_groups):
             print("Current LR: {} of {}th group".format(param_group['lr'], i))
@@ -198,5 +202,6 @@ for trn_stage_no, train_stage in enumerate(train_stages):
 
         sched.step()
         print("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {}".format(train_mse, train_msssim, train_hash, train_loss))
+        send_slack_notif("Train mse: {}, MSSSIM: {}, hash: {}, total loss: {} at the end of epoch {}".format(train_mse, train_msssim, train_hash, train_loss, epoch))
         for key, val in {'train_epoch_mse': train_mse, 'train_epoch_msssim': train_msssim, 'train_epoch_hash': train_hash, 'train_epoch_loss': train_loss}:
             writer.add_scalar(key, val * batch_size / len(trainset), epoch)
