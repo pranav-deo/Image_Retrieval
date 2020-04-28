@@ -6,16 +6,16 @@
 		{
 			"lr" 		: 1e-4,
 			"lr_cauchy"	: 1e-3,
-			"num_epoch"	: 30,
-			"use_weight": 0
+			"num_epoch"	: 10,
+			"use_weight": 1
 		}
 	],
 
 	"batch_size" : 112,
 	"cauchy_loss_weight" :1,
 
-	"scheduler_step"	: 5,
-	"scheduler_gamma"	: 0.8,
+	"scheduler_step"	: 2,
+	"scheduler_gamma"	: 0.95,
 
 	"saved_model_name" 	: "../weights/ae/only_recon_best_weights",
 	"train_data_folder" : "/home/Drive3/pranav/NCT-CRC-HE-100K",
