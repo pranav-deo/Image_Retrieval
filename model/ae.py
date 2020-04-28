@@ -79,7 +79,7 @@ class AE(nn.Module):
 
     def hasher(self, x):
         to_hash = torch.median(x, dim=1, keepdim=True)
-        out = self.hashed_layer(to_hash.view(-1, 784))
+        out = self.hashed_layer(to_hash[0].view(-1, 784))
         return out
 
     def forward(self, x):
