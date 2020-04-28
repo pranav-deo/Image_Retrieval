@@ -4,9 +4,10 @@ def send_slack_notif(msg):
         'Content-type': 'application/json',
     }
 
-    data = '{"text":"{}"}'.format(msg)
+    data = '{"text":"trial"}'
+    print(data)
 
-    response = requests.post('https://hooks.slack.com/services/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', headers=headers, data=data)
+    response = requests.post('https://hooks.slack.com/services/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', headers=headers, data=data)
 
 
 # def send_slack_image(img):
@@ -24,4 +25,4 @@ def send_slack_notif(msg):
 
 
 # if __name__ == '__main__':
-#     send_slack_image("./1.jpeg")
+#     send_slack_notif("trial")
