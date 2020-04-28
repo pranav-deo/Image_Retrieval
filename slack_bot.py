@@ -4,8 +4,7 @@ def send_slack_notif(msg):
         'Content-type': 'application/json',
     }
 
-    data = '{"text":"trial"}'
-    print(data)
+    data = '{"text":"' + msg + '"}'
 
     response = requests.post('https://hooks.slack.com/services/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', headers=headers, data=data)
 

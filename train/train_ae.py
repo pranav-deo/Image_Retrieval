@@ -70,7 +70,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=20)
     val_loader = torch.utils.data.DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=20)
 
-    model = AE().to(device)
+    model = AE(K=K).to(device)
     model = nn.DataParallel(model, device_ids=[1, 0])
 
     if train_stage["use_weight"]:
