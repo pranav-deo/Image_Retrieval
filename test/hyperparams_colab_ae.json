@@ -1,0 +1,6 @@
+{
+	"batch_size" : 16,
+
+	"saved_model_name" 	: "/content/ae_weights.pt",
+	"val_data_folder" : "/content/CRC-VAL-HE-7K"
+}
