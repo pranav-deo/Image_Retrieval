@@ -120,10 +120,11 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                 label = make_one_hot(label)
                 img = img.to(device)
 
-                output, hashed_layer = model(img)
+                # output, hashed_layer = model(img)
+                _, output = model(img)
                 if (i % 100 == 0 and epoch == 0) or (i % 500 == 0 and epoch > 0):
 
-                        # PATH ASSUMES ONLY 1 STAGE
+                    # PATH ASSUMES ONLY 1 STAGE
                     save_image(torch.cat((img, output)), "../results/ae/images/train_check/{}_{}.jpg".format(epoch, i), nrow=batch_size)
 
                 loss, mse, msssim = criterion1(output, img)
@@ -166,7 +167,8 @@ for trn_stage_no, train_stage in enumerate(train_stages):
                                 label = label.to(device)
                                 label = make_one_hot(label)
                                 img = img.to(device)
-                                output, hashed_layer = model(img)
+                                # output, hashed_layer = model(img)
+                                _, output = model(img)
 
                                 if j % 50 == 0:
 
