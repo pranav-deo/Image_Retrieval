@@ -14,15 +14,15 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 def get_tensor_paths():
-    path_latent = ["./h/h_{}.pt".format(ii) for ii in range(449)]
-    path_labels = ["./l/l_{}.pt".format(ii) for ii in range(449)]
+    path_latent = ["../results/ae_hash/out_tensors/parts_small/hash/hash_{}.pt".format(ii) for ii in range(45)]
+    path_labels = ["../results/ae_hash/out_tensors/parts_small/lab/lab_{}.pt".format(ii) for ii in range(45)]
     return path_latent, path_labels
 
 
 def load_tensors():
     path_latent, path_labels = get_tensor_paths()
-    latent_ = [torch.load(path_latent[ii], map_location={'cuda:1': 'cuda:0'}) for ii in range(449)]
-    labels_ = [torch.load(path_labels[ii], map_location={'cuda:1': 'cuda:0'}) for ii in range(449)]
+    latent_ = [torch.load(path_latent[ii], map_location={'cuda:1': 'cuda:0'}) for ii in range(45)]
+    labels_ = [torch.load(path_labels[ii], map_location={'cuda:1': 'cuda:0'}) for ii in range(45)]
     latent = torch.cat(latent_).cpu().detach().numpy()
     labels = torch.cat(labels_).cpu().detach().numpy()
     return latent, labels
@@ -104,15 +104,15 @@ def plot_hamming_distance(latent, labels, num_vec, show_dist=False):
 def main():
     latent, labels = load_tensors()
     latent_binary = np.sign(latent)
-    # save_array_as_text(latent, "latent", 2)
-    # save_array_as_text(latent_binary, "hash", 0)
+    save_array_as_text(latent, "latent", 2)
+    save_array_as_text(latent_binary, "hash", 0)
 
     assert np.all((latent_binary == 1) + (latent_binary == -1))
 
-    # kmeans = get_kmeans(latent_binary)
+    kmeans = get_kmeans(latent_binary)
     # plot_tsne(latent_binary, kmeans.labels_)
-    # plot_confusion_matrix(labels, kmeans.labels_)
-    plot_hamming_distance(latent_binary, labels, 100)
+    plot_confusion_matrix(labels, kmeans.labels_)
+    # plot_hamming_distance(latent_binary, labels, 100)
 
 
 if __name__ == '__main__':
