@@ -6,7 +6,7 @@ def send_slack_notif(msg):
 
     data = '{"text":"' + msg + '"}'
 
-    response = requests.post('https://hooks.slack.com/services/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', headers=headers, data=data)
+    response = requests.post('https://hooks.slack.com/services/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', headers=headers, data=data)
 
 
 # def send_slack_image(img):
