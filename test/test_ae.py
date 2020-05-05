@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
+from tqdm import tqdm
 
 import sys
 import os
@@ -19,7 +20,8 @@ with open("./hyperparams_ae.json", "r") as read_file:
 batch_size = hyperparams["batch_size"]
 val_data_folder = hyperparams["val_data_folder"]
 saved_model_name = hyperparams["saved_model_name"]
-
+save_folder_name = hyperparams["save_folder_name"]
+K = hyperparams["K"]
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -33,16 +35,19 @@ testset = torchvision.datasets.ImageFolder(val_data_folder, transform=test_trans
 test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=20)
 
 
-model = AE().to(device)
+model = AE(K=K).to(device)
 model = nn.DataParallel(model, device_ids=[0])
 model.load_state_dict(torch.load(saved_model_name, map_location={'cuda:1': 'cuda:0'}))
 
-if not os.path.exists('../results/ae/out_tensors/'):
-    os.makedirs('../results/ae/out_tensors/')
+if not os.path.exists(save_folder_name):
+    os.makedirs(save_folder_name)
 
-for i, (data) in enumerate(test_loader):
-    model.eval()
-    print(i)
-    img, _ = data
-    encoded, out = model(img)
-    torch.save(encoded, "../results/ae/out_tensors/parts_small/enc_{}.pt".format(i))
+with tqdm(total=len(test_loader), desc="Batches") as pbar:
+    for i, (data) in enumerate(test_loader):
+        model.eval()
+        img, labels = data
+        encoded, out, hashed = model(img)
+        torch.save(out, save_folder_name + "/out/out_{}.pt".format(i))
+        torch.save(labels, save_folder_name + "/lab/lab_{}.pt".format(i))
+        torch.save(hashed, save_folder_name + "/hash/hash_{}.pt".format(i))
+        pbar.update(1)

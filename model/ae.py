@@ -78,7 +78,7 @@ class AE(nn.Module):
         return c2
 
     def hasher(self, x):
-        to_hash = torch.median(x, dim=1, keepdim=True)
+        to_hash = torch.mean(x, dim=1, keepdim=True)
         out = self.hashed_layer(to_hash[0].view(-1, 784))
         return out
 

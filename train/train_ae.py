@@ -37,7 +37,7 @@ val_data_folder = hyperparams["val_data_folder"]
 cauchy_loss_weight = hyperparams["cauchy_loss_weight"]
 
 # Primary device for computations
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 if len(train_data_folder) == 0:
     print("Set data folder path")
@@ -71,7 +71,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
     val_loader = torch.utils.data.DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=20)
 
     model = AE(K=K).to(device)
-    model = nn.DataParallel(model, device_ids=[1, 0])
+    model = nn.DataParallel(model, device_ids=[0, 1])
 
     if train_stage["use_weight"]:
         model.load_state_dict(torch.load(saved_model_name + '_stage1.pt'), strict=False)
@@ -195,7 +195,7 @@ for trn_stage_no, train_stage in enumerate(train_stages):
 
                         val_iter100_count += 1
                         if val_loss / len(valset) < best_loss:
-                            torch.save(model.state_dict(), saved_model_name + '_hash_stage{}.pt'.format(trn_stage_no + 1))
+                            torch.save(model.state_dict(), saved_model_name + '_hash_stage_mean{}.pt'.format(trn_stage_no + 1))
                             best_loss = val_loss / len(valset)
 
                 pbar.update(1)
